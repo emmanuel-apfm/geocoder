@@ -24,18 +24,23 @@ module Geocoder::Lookup
     end
 
     def results(query)
-      return [] unless doc = fetch_data(query)
-      case doc['status']; when "OK" # OK status implies >0 results
-        return doc['results']
-      when "OVER_QUERY_LIMIT"
-        raise_error(Geocoder::OverQueryLimitError) ||
+      opts = { :tries => 3, :on => Exception }
+      retires = opts[:tries]
+      opts[:tries].times do |time|
+        return [] unless doc = fetch_data(query)
+        case doc['status']; when "OK" # OK status implies >0 results
+          return doc['results']
+        when "OVER_QUERY_LIMIT"
           warn("Google Geocoding API error: over query limit.")
-      when "REQUEST_DENIED"
-        raise_error(Geocoder::RequestDenied) ||
-          warn("Google Geocoding API error: request denied.")
-      when "INVALID_REQUEST"
-        raise_error(Geocoder::InvalidRequest) ||
-          warn("Google Geocoding API error: invalid request.")
+          next if (retires -= 1) >0
+          raise_error(Geocoder::OverQueryLimitError)
+        when "REQUEST_DENIED"
+          raise_error(Geocoder::RequestDenied) ||
+            warn("Google Geocoding API error: request denied.")
+        when "INVALID_REQUEST"
+          raise_error(Geocoder::InvalidRequest) ||
+            warn("Google Geocoding API error: invalid request.")
+        end
       end
       return []
     end
