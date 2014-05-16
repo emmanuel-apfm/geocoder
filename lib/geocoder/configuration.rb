@@ -51,6 +51,7 @@ module Geocoder
       :http_proxy,
       :https_proxy,
       :api_key,
+      :api_keys,
       :cache,
       :cache_prefix,
       :always_raise,
@@ -94,6 +95,7 @@ module Geocoder
       @data[:http_proxy]   = nil         # HTTP proxy server (user:pass@host:port)
       @data[:https_proxy]  = nil         # HTTPS proxy server (user:pass@host:port)
       @data[:api_key]      = nil         # API key for geocoding service
+      @data[:api_keys]     = nil         # API keys for geocoding service(multi-api_key, can be edge switching)
       @data[:cache]        = nil         # cache object (must respond to #[], #[]=, and #keys)
       @data[:cache_prefix] = "geocoder:" # prefix (string) to use for all cache keys
 
