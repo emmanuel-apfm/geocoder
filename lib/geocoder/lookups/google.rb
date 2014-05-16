@@ -60,8 +60,16 @@ module Geocoder::Lookup
 
     def query_url_params(query)
       query_url_google_params(query).merge(
-        :key => configuration.api_key
+        :key => query_url_api_key
       ).merge(super)
+    end
+
+    def query_url_api_key
+      if configuration.api_key
+        configuration.api_key
+      elsif configuration.api_keys
+        configuration.api_keys.shuffle.first
+      end
     end
   end
 end
