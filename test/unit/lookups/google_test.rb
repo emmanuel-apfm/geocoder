@@ -72,6 +72,14 @@ class GoogleTest < GeocoderTestCase
     assert_match(/bounds=40.0+%2C-120.0+%7C39.0+%2C-121.0+/, url)
   end
 
+  def test_google_query_url_with_api_keys
+    api_keys = ['aaa','bbb', 'ccc']
+    Geocoder.configure(:api_keys=>api_keys,:use_https=>true)
+    lookup = Geocoder::Lookup::Google.new
+    url = lookup.query_url(Geocoder::Query.new('new york, NY'))
+    assert api_keys.include?(CGI.parse(url)['key'].first)
+  end
+
   def test_google_query_url_contains_region
     lookup = Geocoder::Lookup::Google.new
     url = lookup.query_url(Geocoder::Query.new(

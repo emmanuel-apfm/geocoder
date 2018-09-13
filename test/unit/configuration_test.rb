@@ -35,6 +35,18 @@ class ConfigurationTest < GeocoderTestCase
     assert_equal "aaa", Geocoder.config_for_lookup(:google).api_key
   end
 
+  def test_config_for_api_keys
+    Geocoder.configure(
+        :timeout => 5,
+        :api_keys => ["aaa", "bbb"],
+        :google => {
+            :timeout => 2
+        }
+    )
+    assert_equal 2, Geocoder.config_for_lookup(:google).timeout
+    assert_equal ["aaa", "bbb"], Geocoder.config_for_lookup(:google).api_keys
+  end
+
   def test_configuration_chain
     v = PlaceReverseGeocoded.new(*reverse_geocoded_object_params(:msg))
     v.latitude  = 0
