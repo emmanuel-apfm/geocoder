@@ -3,6 +3,7 @@ require "geocoder/results/google"
 
 module Geocoder::Lookup
   class Google < Base
+    QUERY_LIMIT_RETRIES = 3
 
     def name
       "Google"
@@ -45,18 +46,25 @@ module Geocoder::Lookup
     end
 
     def results(query)
-      return [] unless doc = fetch_data(query)
-      case doc['status']; when "OK" # OK status implies >0 results
-        return doc['results']
-      when "OVER_QUERY_LIMIT"
-        raise_error(Geocoder::OverQueryLimitError) ||
+      try = 1
+      loop do |time|
+        return [] unless doc = fetch_data(query)
+        case doc['status']; when "OK" # OK status implies >0 results
+          return doc['results']
+        when "OVER_QUERY_LIMIT"
           Geocoder.log(:warn, "#{name} API error: over query limit.")
-      when "REQUEST_DENIED"
-        raise_error(Geocoder::RequestDenied, doc['error_message']) ||
-          Geocoder.log(:warn, "#{name} API error: request denied (#{doc['error_message']}).")
-      when "INVALID_REQUEST"
-        raise_error(Geocoder::InvalidRequest, doc['error_message']) ||
-          Geocoder.log(:warn, "#{name} API error: invalid request (#{doc['error_message']}).")
+          next if (try += 1) <= QUERY_LIMIT_RETRIES
+          raise_error(Geocoder::OverQueryLimitError)
+          break
+        when "REQUEST_DENIED"
+          raise_error(Geocoder::RequestDenied) ||
+              Geocoder.log(:warn, "#{name} API error: request denied (#{doc['error_message']}).")
+          break
+        when "INVALID_REQUEST"
+          raise_error(Geocoder::InvalidRequest) ||
+              Geocoder.log(:warn, "#{name} API error: invalid request (#{doc['error_message']}).")
+          break
+        end
       end
       return []
     end
@@ -88,8 +96,16 @@ module Geocoder::Lookup
 
     def query_url_params(query)
       query_url_google_params(query).merge(
-        :key => configuration.api_key
+        :key => query_url_api_key
       ).merge(super)
+    end
+
+    def query_url_api_key
+      if configuration.api_key
+        configuration.api_key
+      elsif configuration.api_keys
+        configuration.api_keys.shuffle.first
+      end
     end
   end
 end
